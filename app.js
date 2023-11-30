@@ -15,18 +15,19 @@ async function main() {
   await mongoose.connect(mongoDB);
 }
 
+// Use body-parser middleware to parse incoming request bodies
+const bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({ extended: true }));
+
 // Set EJS as the view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// // Define routes
-// app.get('/', (req, res) => {
-//   res.render('user_form', { title: 'Members only club' });
-// });
+const user_controller = require('./controllers/userController');
+// Define routes
+app.get('/', user_controller.user_create_get);
 
-// app.post('/', (req, res) => {
-//   res.render('user_homepage')
-// })
+app.post('/', user_controller.user_create_post);
 
 // Start the server
 const PORT = 3000;

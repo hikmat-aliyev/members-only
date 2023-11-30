@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
   first_name: { type: String, required: true, maxLength: 50 },
-  last_name: { type: String, required: true, maxLength: 50},
+  family_name: { type: String, required: true, maxLength: 50},
   email: { type: String, required: true, maxLength: 50},
   password: { type: String, required: true, minLength: 3}
 })
@@ -12,7 +12,7 @@ const UserSchema = new Schema({
 UserSchema.virtual("full_name").get(function(){
   let fullName = "";
   if (this.first_name && this.last_name) {
-    fullName = `${this.first_name}, ${this.last_name}`;
+    fullName = `${this.first_name}, ${this.family_name}`;
   }
   return fullName;
 })
