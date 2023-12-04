@@ -1,12 +1,29 @@
 const User = require('../models/user');
 const asyncHandler = require('express-async-handler');
 const { body, validationResult } = require('express-validator');
+const bcrypt = require("bcryptjs");
 
-exports.user_create_get = (req, res, next) => {
-  res.render('user_form', { title: 'Members only club', errors: [] })
+exports.homepage_get = (req, res, next) => {
+  res.render('homepage', {user: req.user})
 }
 
-exports.user_create_post = [
+exports.user_signup_get = (req, res, next) => {
+  res.render('user_signup_form', { title: 'Members only club', errors: [] })
+}
+
+exports.user_signup_post = [
+  body('username')
+  .trim()
+  .isLength({ min: 1})
+  .escape()
+  .withMessage('Username must be specified.')
+  .custom(async (value) => {
+    const username = await User.find({ username: value })
+    if(username.length > 0){
+      throw new Error('Username is already exist!')
+    }
+    return true;
+  }),
   body('first_name')
     .trim()
     .isLength({ min: 1})
@@ -14,7 +31,7 @@ exports.user_create_post = [
     .withMessage('First name must be specified.')
     .isAlphanumeric()
     .withMessage('First name has non-alphanumeric characters.'),
-  body('family_name')
+  body('last_name')
     .trim()
     .isLength({ min: 1})
     .escape()
@@ -26,11 +43,6 @@ exports.user_create_post = [
     .isLength({ min: 3 })
     .escape()
     .withMessage('Password should be at least 3 characters long.'),
-  body('email')
-    .trim()
-    .isEmail()
-    .escape()
-    .withMessage('Invalid email address.'),
   body('password_confirm')
     .trim()
     .custom((value, {req}) => {
@@ -43,24 +55,39 @@ exports.user_create_post = [
     asyncHandler(async (req, res, next) => {
       // Extract the validation errors from a request.
       const errors = validationResult(req);
-
-      const user = new User({
-        first_name: req.body.first_name,
-        family_name: req.body.family_name,
-        email: req.body.email,
-        password: req.body.password
-      });
-
-      if(!errors.isEmpty()) {
-        res.render('user_form', {
-          title: 'Members error only club',
-          errors: errors.array()
-        });
-        return;
-      }else {
-        await user.save();
-        res.render('user_homepage')
+      try{
+        await bcrypt.hash(req.body.password, 10, async (err, hashedPassword) => {
+          if(err){
+            return next(err);
+          }else{
+            try{
+              const user = new User({
+                first_name: req.body.first_name,
+                last_name: req.body.last_name,
+                username: req.body.username,
+                password: hashedPassword
+              });
+              if(!errors.isEmpty()) {
+                res.render('sign-up-form', {
+                  title: 'Members error only club',
+                  errors: errors.array()
+                });
+                return;
+              }else {
+                await user.save();
+                res.redirect('/')
+              }
+            }catch(err){
+              return next(err);
+            }
+          }
+        })
+      } catch(err){
+        return next(err);
       }
-
     })
 ]
+
+exports.user_login_get = (req, res, next) => {
+  res.render('user_login_form')
+}
